@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Neon Tic Tac Toe HD</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: radial-gradient(circle at center, #0d0d0d 0%, #000000 100%);
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            overflow-x: hidden; /* Prevent horizontal scroll on animations */
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh; /* Ensure body takes full viewport height */
+        }
+        h1 {
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+            margin-bottom: 1rem;
+        }
+
+        /* Profile and Score Display Container */
+        .profile-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem; /* Space below this container */
+            min-height: 100px; /* To prevent layout jumps */
+            position: relative; /* For absolute positioning of profile-info/game-score */
+        }
+
+        .profile-info, .game-score {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            position: absolute; /* Allows smooth swapping */
+            width: 100%;
+            top: 0; /* Align at the top of the profile-container */
+            left: 0;
+            display: flex;
+            flex-direction: column; /* Changed to column for vertical stacking */
+            align-items: center;
+            justify-content: center;
+            padding-top: 10px; /* Adjust as needed for spacing */
+        }
+
+        .profile-info.hidden, .game-score.hidden {
+            opacity: 0;
+            pointer-events: none;
+            visibility: hidden;
+            transform: translateY(-20px); /* Animate out */
+        }
+        .profile-info.visible, .game-score.visible {
+            opacity: 1;
+            pointer-events: all;
+            visibility: visible;
+            transform: translateY(0); /* Animate in */
+            position: static; /* Take up space when visible */
+        }
+
+
+        .profile-info {
+            position: relative; /* For the image and name */
+        }
+        
+        .profile-info img {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 3px solid #00ffff;
+            box-shadow: 0 0 10px #00ffff, 0 0 20px rgba(0,255,255,0.3);
+            object-fit: cover;
+            cursor: pointer;
+            margin-bottom: 8px; /* Space between image and name */
+        }
+        
+        .profile-info span {
+            font-size: 1.4rem;
+            color: #00ffff;
+            font-weight: bold;
+            text-shadow: 0 0 8px #00ffff;
+            white-space: nowrap;
+            display: flex; /* Use flex to align name and icon */
+            align-items: center; /* Vertically center */
+        }
+        .profile-info .edit-icon {
+            cursor: pointer;
+            margin-left: 8px; /* Space between name and icon */
+            font-size: 1.1rem; /* Slightly larger icon */
+            opacity: 0.8;
+            transition: opacity 0.2s ease;
+            line-height: 1; /* Ensures vertical alignment */
+        }
+        .profile-info .edit-icon:hover {
+            opacity: 1;
+        }
+
+        /* Styles for game score display */
+        .game-score {
+            flex-direction: column; /* Changed to column for vertical stacking */
+            gap: 5px; /* Reduced gap between score lines */
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #00ffcc;
+            text-shadow: 0 0 10px #00ffcc, 0 0 20px rgba(0,255,204,0.4);
+            margin-top: 20px; /* Space from heading/top */
+            min-height: 70px; /* Ensure it takes up space */
+        }
+        .game-score .score-line {
+            white-space: nowrap;
+        }
+
+        .menu {
+            margin-bottom: 1.5rem; /* Space below menu buttons */
+        }
+        .menu button {
+            background: transparent;
+            border: 2px solid #00ffff;
+            color: #00ffff;
+            padding: 12px 25px;
+            margin: 8px; /* Reduced margin to bring buttons closer */
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-shadow: 0 0 6px #00ffff;
+            transition: background 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 0 10px rgba(0,255,255,0.4);
+            width: 80%; /* Make buttons more responsive */
+            max-width: 280px; /* Max width for larger screens */
+        }
+        .menu button:hover {
+            background: #00ffff33;
+            box-shadow: 0 0 15px #00ffff, 0 0 25px rgba(0,255,255,0.6);
+            transform: translateY(-2px); /* Subtle hover effect */
+        }
+
+        /* New styles for difficulty selection */
+        .difficulty-selection {
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .difficulty-selection h3 {
+            color: #00ffcc;
+            text-shadow: 0 0 8px #00ffcc;
+            margin-bottom: 15px;
+        }
+        .difficulty-selection .difficulty-buttons {
+            display: flex;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            justify-content: center;
+            gap: 10px; /* Space between difficulty buttons */
+            width: 100%;
+            max-width: 350px;
+        }
+        .difficulty-selection .difficulty-buttons button {
+            flex-grow: 1; /* Allow buttons to grow and fill space */
+            min-width: 100px; /* Minimum width for buttons */
+            background: transparent;
+            border: 2px solid #00ffff;
+            color: #00ffff;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-shadow: 0 0 5px #00ffff;
+            transition: background 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 0 8px rgba(0,255,255,0.3);
+        }
+        .difficulty-selection .difficulty-buttons button:hover {
+            background: #00ffff33;
+            box-shadow: 0 0 12px #00ffff, 0 0 20px rgba(0,255,255,0.5);
+            transform: translateY(-1px);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 90px); /* Slightly smaller cells for more space */
+            grid-gap: 10px; /* Slightly smaller gap */
+            justify-content: center;
+            margin: 2rem auto; /* Adjusted margin */
+            opacity: 1;
+            transform: scale(1);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .grid.hidden {
+            opacity: 0;
+            transform: scale(0.9);
+            pointer-events: none;
+        }
+        .cell {
+            width: 90px; /* Match grid-template-columns */
+            height: 90px; /* Match grid-template-columns */
+            font-size: 4rem; /* Adjusted font size */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #1a1a1a;
+            border: 3px solid #00ffff;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 0 18px #00ffff, inset 0 0 8px #00ffff;
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+        .cell:hover:not(.X):not(.O) {
+            background: #2a2a2a;
+            transform: scale(1.03);
+        }
+        .cell.X {
+            color: #ff00ff;
+            text-shadow: 0 0 20px #ff00ff, 0 0 40px rgba(255,0,255,0.5);
+        }
+        .cell.O {
+            color: #00ffff;
+            text-shadow: 0 0 20px #00ffff, 0 0 40px rgba(0,255,255,0.5);
+        }
+
+        .room-box, .join-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(1);
+            background: #0d0d0d;
+            padding: 30px;
+            border: 3px solid #00ffff;
+            border-radius: 15px;
+            color: #00ffff;
+            box-shadow: 0 0 20px #00ffff, 0 0 30px rgba(0,255,255,0.4);
+            z-index: 1000;
+            text-align: center;
+            animation: fadeIn 0.5s ease;
+            width: 80%;
+            max-width: 400px;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -60%) scale(0.8); }
+            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.03); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+        .room-code-display {
+            font-size: 2.2rem;
+            letter-spacing: 3px;
+            margin: 15px 0;
+            font-weight: bold;
+            color: #00ffcc;
+            text-shadow: 0 0 10px #00ffcc;
+        }
+        .room-box button, .join-modal button {
+            background: #000;
+            border: 2px solid #00ffff;
+            color: #00ffff;
+            padding: 10px 20px;
+            margin: 8px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-shadow: 0 0 5px #00ffff;
+            box-shadow: 0 0 10px rgba(0,255,255,0.3);
+            transition: background 0.3s ease;
+        }
+        .room-box button:hover, .join-modal button:hover {
+            background: #00ffff33;
+        }
+        .join-modal input {
+            background: #000;
+            border: 2px solid #00ffff;
+            padding: 12px;
+            border-radius: 10px;
+            color: #00ffff;
+            width: calc(100% - 24px);
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+        .leaderboard {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 400px;
+            width: 90%;
+            background: #1a1a1a;
+            border: 3px solid #00ffff;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 0 15px #00ffff, 0 0 25px rgba(0,255,255,0.4);
+            animation: fadeIn 0.5s ease;
+            z-index: 1001;
+
+            /* Add scrolling to leaderboard */
+            max-height: 80vh; /* Set max height to allow scrolling */
+            overflow-y: auto; /* Enable vertical scrolling */
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+        }
+        .leaderboard h2 {
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            color: #00ffcc;
+            text-shadow: 0 0 8px #00ffcc;
+            font-size: 1.8rem;
+        }
+        .leaderboard-entry {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.8rem 0;
+            border-bottom: 1px solid #333;
+            position: relative; /* For sticker positioning */
+        }
+        .leaderboard-entry:last-child {
+            border-bottom: none;
+        }
+        .leaderboard-entry img {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: 2px solid #00ffff;
+            object-fit: cover;
+            margin-right: 12px;
+            box-shadow: 0 0 5px #00ffff;
+        }
+        .leaderboard-entry .name-section {
+            display: flex;
+            flex-direction: column; /* Changed to column for name and matches */
+            align-items: flex-start; /* Align text to the left */
+            flex: 1;
+            font-size: 1.1rem;
+            line-height: 1.2; /* Adjust line height for better spacing */
+        }
+        .leaderboard-entry .rank {
+            margin-right: 15px;
+            width: 30px;
+            font-weight: bold;
+            color: #00ffcc;
+        }
+        .leaderboard-entry .name {
+            color: #00ffff;
+            font-weight: bold;
+            white-space: nowrap; /* Prevent name from wrapping */
+            overflow: hidden;
+            text-overflow: ellipsis; /* Add ellipsis if name is too long */
+            max-width: 150px; /* Limit name width */
+        }
+        .leaderboard-entry .matches-played {
+            font-size: 0.85rem;
+            color: #aaa;
+            margin-top: 2px;
+        }
+        .leaderboard-entry .prize {
+            font-weight: bold;
+            color: gold;
+            font-size: 1.1rem;
+            text-shadow: 0 0 5px gold;
+        }
+        /* Admin message button for leaderboard */
+        .leaderboard-entry .admin-message-btn {
+            background: none;
+            border: none;
+            color: #00ffcc;
+            font-size: 1.2rem;
+            cursor: pointer;
+            margin-left: 10px;
+            transition: color 0.2s ease;
+        }
+        .leaderboard-entry .admin-message-btn:hover {
+            color: #00ffff;
+        }
+
+        /* Achievement Stickers */
+        .sticker {
+            position: absolute;
+            top: -10px; /* Adjust as needed */
+            right: -10px; /* Adjust as needed */
+            font-size: 1.8rem;
+            transform: rotate(15deg);
+            z-index: 1;
+            filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));
+        }
+        .sticker.gold { color: gold; }
+        .sticker.silver { color: silver; }
+        .sticker.bronze { color: #cd7f32; /* bronze color */ }
+
+        .ad-slot {
+            /* Updated for a more realistic ad look */
+            height: 100px; /* Taller for more content */
+            background: linear-gradient(45deg, #1f1f1f, #0f0f0f);
+            border: 2px solid #00ffff;
+            margin: 1.5rem auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #ccc;
+            font-size: 0.9rem;
+            max-width: 320px; /* Common banner ad width */
+            border-radius: 12px;
+            padding: 10px;
+            cursor: pointer; /* Indicate it's clickable */
+            box-shadow: 0 0 15px rgba(0,255,255,0.2), inset 0 0 5px rgba(0,255,255,0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .ad-slot:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 20px rgba(0,255,255,0.4), inset 0 0 8px rgba(0,255,255,0.2);
+        }
+        .ad-slot .ad-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #00ffcc;
+            text-shadow: 0 0 5px #00ffcc;
+            margin-bottom: 5px;
+        }
+        .ad-slot .ad-text {
+            font-size: 0.85rem;
+            color: #bbb;
+            text-align: center;
+            line-height: 1.3;
+        }
+        .ad-slot .ad-label {
+            font-size: 0.7rem;
+            color: #777;
+            margin-top: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .hidden { display: none; }
+
+        /* Overlay Styles for Win/Draw/Error */
+        .overlay {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.95);
+            padding: 40px 30px;
+            border: 3px solid #00ffff;
+            border-radius: 20px;
+            box-shadow: 0 0 25px #00ffff, 0 0 40px rgba(0,255,255,0.6);
+            text-shadow: 0 0 12px #00ffff;
+            z-index: 9999;
+            animation: fadeIn 0.5s ease, pulse 1.5s infinite alternate;
+            color: #00ffcc;
+            width: 85%;
+            max-width: 450px;
+        }
+        .overlay h2 {
+            margin: 0 0 15px 0; /* Reduced margin */
+            font-size: 2.2rem; /* Slightly smaller font */
+            color: #00ffcc;
+            text-shadow: 0 0 15px #00ffcc;
+        }
+        .overlay p { /* New style for additional text */
+            font-size: 1.1rem;
+            color: #ccc;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .overlay .buttons {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        .overlay .buttons button {
+            background: #000;
+            border: 2px solid #00ffff;
+            color: #00ffff;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-shadow: 0 0 5px #00ffff;
+            box-shadow: 0 0 10px #00ffff;
+            transition: background 0.3s ease, transform 0.2s ease;
+        }
+        .overlay .buttons button:hover {
+            background: #00ffff33;
+            transform: translateY(-2px);
+        }
+        .error-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #0d0d0d;
+            color: #ff0066;
+            padding: 25px;
+            border: 2px solid #ff0066;
+            border-radius: 12px;
+            box-shadow: 0 0 18px #ff0066;
+            z-index: 1000;
+            animation: fadeIn 0.5s ease;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-align: center;
+            max-width: 350px;
+        }
+
+        /* New styles for the close button on the leaderboard */
+        .leaderboard .close-button {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #00ffff;
+            font-size: 2rem;
+            cursor: pointer;
+            line-height: 1;
+            padding: 5px;
+            text-shadow: 0 0 5px #00ffff;
+            transition: transform 0.2s ease, text-shadow 0.2s ease;
+        }
+
+        .leaderboard .close-button:hover {
+            transform: scale(1.1);
+            text-shadow: 0 0 10px #ff00ff;
+        }
+    </style>
+</head>
+<body>
+    <h1>Neon Tic Tac Toe HD</h1>
+
+    <div class="profile-container">
+        <div id="profileInfo" class="profile-info visible">
+            <label for="photoUpload">
+                <img id="profileImg" src="avatar.png" alt="Profile" title="Click to update" />
+            </label>
+            <input type="file" id="photoUpload" accept="image/*" style="display:none" />
+            <span id="playerName">Player Name <span class="edit-icon" onclick="editName()">✏️</span></span>
+        </div>
+        <div id="gameScoreDisplay" class="game-score hidden">
+            <span class="score-line">You Wins (X): <span id="playerXWins">0</span></span>
+            <span class="score-line">Computer Wins (O): <span id="playerOWins">0</span></span>
+        </div>
+    </div>
+
+    <div class="menu" id="mainMenu">
+        <button onclick="showDifficultySelection()">Play vs Computer</button>
+        <button onclick="createRoom()">Create Room</button>
+        <button onclick="openJoinModal()">Join Room</button>
+        <button onclick="viewLeaderboard()">Leaderboard</button>
+    </div>
+
+    <div id="difficultySelection" class="difficulty-selection hidden">
+        <h3>Choose Difficulty</h3>
+        <div class="difficulty-buttons">
+            <button onclick="startVsComputer('easy')">Easy AI</button>
+            <button onclick="startVsComputer('normal')">Normal AI</button>
+            <button onclick="startVsComputer('hard')">Hard AI</button>
+            <button onclick="backToMainMenu()">Back</button>
+        </div>
+    </div>
+
+    <div class="ad-slot" onclick="showAdOverlay()">
+        <span class="ad-title">Play "Neon Rush" Now!</span>
+        <span class="ad-text">Fast-paced arcade action. Download today!</span>
+        <span class="ad-label">Advertisement</span>
+    </div>
+
+    <div class="grid hidden" id="gameBoard"></div>
+
+    <div class="ad-slot" onclick="showAdOverlay()">
+        <span class="ad-title">Get Premium Tic Tac Toe!</span>
+        <span class="ad-text">Unlock new themes & remove ads.</span>
+        <span class="ad-label">Advertisement</span>
+    </div>
+
+    <div class="leaderboard hidden" id="leaderboard">
+        <button class="close-button" onclick="closeLeaderboard()">✖</button>
+        <h2>🏆 Monthly Leaderboard</h2>
+        <div id="rankings"></div>
+    </div>
+
+    <div id="roomPopup" class="room-box hidden">
+        <div>Share this Room Code:</div>
+        <div class="room-code-display" id="roomCodeDisplay"></div>
+        <button onclick="closeRoomBox()">OK</button>
+    </div>
+
+    <div id="joinModal" class="join-modal hidden">
+        <div><strong>Enter Room Code</strong></div>
+        <input type="text" id="roomCodeInput" placeholder="Paste code here" maxlength="6" />
+        <button onclick="joinRoom()">Join</button>
+        <button onclick="closeJoinModal()">Cancel</button>
+    </div>
+
+    <script>
+        let board = Array(9).fill(null);
+        let currentPlayer = 'X';
+        let isComputerGame = false;
+        let roomCode = null;
+        let gameActive = false;
+        let aiDifficulty = 'easy'; // Default AI difficulty
+
+        // Score variables, loaded from localStorage or initialized to 0
+        let playerXWins = parseInt(localStorage.getItem('playerXWins') || '0');
+        let playerOWins = parseInt(localStorage.getItem('playerOWins') || '0');
+        let totalMatchesPlayed = parseInt(localStorage.getItem('totalMatchesPlayed') || '0');
+
+        // Profile update limits variables
+        const MAX_UPDATES_PER_PERIOD = 3;
+        const UPDATE_PERIOD_MS = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
+
+        // DOM Elements
+        const nameSpan = document.getElementById('playerName');
+        const profileImg = document.getElementById('profileImg');
+        const photoUpload = document.getElementById('photoUpload');
+        const gameBoard = document.getElementById('gameBoard');
+        const mainMenu = document.getElementById('mainMenu');
+        const difficultySelection = document.getElementById('difficultySelection'); // New
+        const leaderboardPanel = document.getElementById('leaderboard');
+        const roomPopup = document.getElementById('roomPopup');
+        const joinModal = document.getElementById('joinModal');
+        
+        // New profile/score container elements
+        const profileInfoDiv = document.getElementById('profileInfo');
+        const gameScoreDisplay = document.getElementById('gameScoreDisplay');
+        const playerXWinsSpan = document.getElementById('playerXWins');
+        const playerOWinsSpan = document.getElementById('playerOWins');
+
+        // Initialize player data from localStorage
+        const savedPlayerName = localStorage.getItem('playerName');
+        if (savedPlayerName) {
+            nameSpan.innerHTML = `${savedPlayerName} <span class="edit-icon" onclick="editName()">✏️</span>`;
+        } else {
+            localStorage.setItem('playerName', 'Player 1');
+            nameSpan.innerHTML = `Player 1 <span class="edit-icon" onclick="editName()">✏️</span>`;
+        }
+
+        const savedProfileImg = localStorage.getItem('profileImg');
+        if (savedProfileImg) {
+            profileImg.src = savedProfileImg;
+        }
+
+        // Event listener for profile image upload
+        photoUpload.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                if (!checkProfileUpdateAllowance()) {
+                    // Message already shown by checkProfileUpdateAllowance
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    localStorage.setItem('profileImg', event.target.result);
+                    profileImg.src = event.target.result;
+                    recordProfileUpdate(); // Record the update
+                    showSuccessMessage('Profile image updated successfully!');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        /**
+         * Checks if a profile (name or image) update is allowed based on limits.
+         * Shows an error message if not allowed.
+         * @returns {boolean} True if update is allowed, false otherwise.
+         */
+        function checkProfileUpdateAllowance() {
+            const currentTime = Date.now();
+            let updateCount = parseInt(localStorage.getItem('profileUpdateCount') || '0');
+            const lastUpdateTime = parseInt(localStorage.getItem('lastProfileUpdateTime') || '0');
+            
+            // If the update period has passed since the last update, reset count
+            if (currentTime - lastUpdateTime > UPDATE_PERIOD_MS) {
+                updateCount = 0;
+                localStorage.setItem('profileUpdateCount', '0');
+                localStorage.setItem('lastProfileUpdateTime', '0'); // Reset last update time
+            }
+
+            if (updateCount >= MAX_UPDATES_PER_PERIOD) {
+                const timeLeft = UPDATE_PERIOD_MS - (currentTime - lastUpdateTime);
+                const daysLeft = Math.ceil(timeLeft / (24 * 60 * 60 * 1000));
+                showErrorMessage(`⏳ You can update your profile again in ${daysLeft} day(s).`);
+                return false;
+            }
+            return true;
+        }
+
+        /**
+         * Records a successful profile update (name or image).
+         */
+        function recordProfileUpdate() {
+            let updateCount = parseInt(localStorage.getItem('profileUpdateCount') || '0');
+            localStorage.setItem('profileUpdateCount', (updateCount + 1).toString());
+            localStorage.setItem('lastProfileUpdateTime', Date.now().toString());
+        }
+
+        /**
+         * Allows editing the player's name with a rate limit.
+         */
+        function editName() {
+            if (!checkProfileUpdateAllowance()) {
+                // Message already shown by checkProfileUpdateAllowance
+                return;
+            }
+
+            const newName = prompt("Enter your new player name:");
+            if (newName && newName.trim() !== '') {
+                localStorage.setItem('playerName', newName.trim());
+                nameSpan.innerHTML = `${newName.trim()} <span class="edit-icon" onclick="editName()">✏️</span>`;
+                recordProfileUpdate(); // Record the update
+                showSuccessMessage('Name updated successfully!');
+            } else if (newName !== null) { // If prompt was cancelled, newName is null
+                showErrorMessage('Player name cannot be empty.');
+            }
+        }
+
+        /**
+         * Loads scores from local storage and updates the display.
+         */
+        function loadScores() {
+            playerXWins = parseInt(localStorage.getItem('playerXWins') || '0');
+            playerOWins = parseInt(localStorage.getItem('playerOWins') || '0');
+            totalMatchesPlayed = parseInt(localStorage.getItem('totalMatchesPlayed') || '0'); // Load total matches
+            updateScoreDisplay();
+        }
+
+        /**
+         * Saves current scores to local storage.
+         */
+        function saveScores() {
+            localStorage.setItem('playerXWins', playerXWins.toString());
+            localStorage.setItem('playerOWins', playerOWins.toString());
+            localStorage.setItem('totalMatchesPlayed', totalMatchesPlayed.toString()); // Save total matches
+        }
+
+        /**
+         * Updates the score display on the UI.
+         */
+        function updateScoreDisplay() {
+            playerXWinsSpan.textContent = playerXWins;
+            playerOWinsSpan.textContent = playerOWins;
+        }
+
+        /**
+         * Draws the Tic Tac Toe board based on the current `board` array.
+         */
+        function drawBoard() {
+            gameBoard.innerHTML = '';
+            board.forEach((value, index) => {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                if (value) {
+                    cell.classList.add(value);
+                    cell.textContent = value;
+                }
+                cell.onclick = () => handleMove(index);
+                gameBoard.appendChild(cell);
+            });
+            // Show or hide game board based on gameActive state
+            if (gameActive) {
+                gameBoard.classList.remove('hidden');
+            } else {
+                gameBoard.classList.add('hidden');
+            }
+        }
+
+        /**
+         * Displays a temporary overlay message for win/draw/errors.
+         * @param {string} message - The main message to display.
+         * @param {boolean} isGameEnd - True if it's a game end message (shows restart/home buttons).
+         */
+        function showOverlay(message, isGameEnd = false) {
+            removeOverlay(); // Remove any existing overlay first
+
+            const overlay = document.createElement('div');
+            overlay.className = 'overlay';
+            
+            const header = document.createElement('h2');
+            header.textContent = message;
+            overlay.appendChild(header);
+            
+            if (isGameEnd) {
+                // Add score/match details to the overlay
+                const detailsParagraph = document.createElement('p');
+                const playerName = localStorage.getItem('playerName') || 'You';
+                detailsParagraph.innerHTML = `Your Wins: ${playerXWins}<br>Total Matches Played: ${totalMatchesPlayed}`;
+                overlay.appendChild(detailsParagraph);
+
+
+                const btnContainer = document.createElement('div');
+                btnContainer.className = 'buttons';
+                
+                const restartBtn = document.createElement('button');
+                restartBtn.textContent = '🔁 Play Again';
+                restartBtn.onclick = restartGame;
+                btnContainer.appendChild(restartBtn);
+                
+                const backBtn = document.createElement('button');
+                backBtn.textContent = '🏠 Home';
+                backBtn.onclick = goHome;
+                btnContainer.appendChild(backBtn);
+                
+                overlay.appendChild(btnContainer);
+            }
+            
+            document.body.appendChild(overlay);
+
+            if (!isGameEnd) {
+                // Auto-remove non-game-end overlays (like success/error messages)
+                setTimeout(() => { if(overlay) overlay.remove(); }, 3000);
+            }
+        }
+
+        /**
+         * Displays a temporary error message.
+         * @param {string} message - The error message.
+         */
+        function showErrorMessage(message) {
+            removeOverlay(); // Clear any existing overlays
+            const errorBox = document.createElement('div');
+            errorBox.textContent = `❌ ${message}`;
+            errorBox.className = 'error-message';
+            document.body.appendChild(errorBox);
+            setTimeout(() => { errorBox.remove(); }, 3500); // Remove after 3.5 seconds
+        }
+
+        /**
+         * Displays a temporary success message.
+         * @param {string} message - The success message.
+         */
+        function showSuccessMessage(message) {
+            removeOverlay(); // Clear any existing overlays
+            const successBox = document.createElement('div');
+            successBox.textContent = `✅ ${message}`;
+            successBox.className = 'error-message'; // Using the same styling for now, could be 'success-message'
+            successBox.style.borderColor = '#00ffcc';
+            successBox.style.boxShadow = '0 0 18px #00ffcc';
+            successBox.style.color = '#00ffcc';
+            document.body.appendChild(successBox);
+            setTimeout(() => { successBox.remove(); }, 3000); // Remove after 3 seconds
+        }
+
+        /**
+         * Removes any active overlay messages.
+         */
+        function removeOverlay() {
+            const existingOverlay = document.querySelector('.overlay');
+            if (existingOverlay) {
+                existingOverlay.remove();
+            }
+            const existingError = document.querySelector('.error-message');
+            if (existingError) {
+                existingError.remove();
+            }
+        }
+
+        /**
+         * Checks for a win condition.
+         * @param {Array} currentBoard - The current state of the board.
+         * @returns {string|null} The winning player ('X' or 'O') or null if no win.
+         */
+        function checkWin(currentBoard) {
+            const winPatterns = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+                [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+                [0, 4, 8], [2, 4, 6]             // Diagonals
+            ];
+
+            for (const pattern of winPatterns) {
+                const [a, b, c] = pattern;
+                if (currentBoard[a] && currentBoard[a] === currentBoard[b] && currentBoard[a] === currentBoard[c]) {
+                    return currentBoard[a];
+                }
+            }
+            return null;
+        }
+
+        /**
+         * Checks for a draw condition.
+         * @param {Array} currentBoard - The current state of the board.
+         * @returns {boolean} True if it's a draw, false otherwise.
+         */
+        function checkDraw(currentBoard) {
+            return !checkWin(currentBoard) && currentBoard.every(cell => cell !== null);
+        }
+
+        /**
+         * Handles a player's move on the board.
+         * @param {number} index - The index of the cell clicked.
+         */
+        function handleMove(index) {
+            if (!gameActive || board[index] !== null) return;
+
+            board[index] = currentPlayer;
+            drawBoard();
+
+            const winner = checkWin(board);
+            if (winner) {
+                gameActive = false;
+                totalMatchesPlayed++;
+                if (isComputerGame) {
+                    if (winner === 'X') {
+                        playerXWins++;
+                        showOverlay(`${localStorage.getItem('playerName') || 'You'} (X) wins! 🎉`, true);
+                    } else {
+                        playerOWins++;
+                        showOverlay(`Computer (O) wins! 🤖`, true);
+                    }
+                } else {
+                    // Multiplayer game logic (simplified)
+                    showOverlay(`${winner} wins! 🎉`, true);
+                }
+                saveScores();
+                return;
+            }
+
+            if (checkDraw(board)) {
+                gameActive = false;
+                totalMatchesPlayed++;
+                showOverlay("It's a draw! 🤝", true);
+                saveScores();
+                return;
+            }
+
+            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+
+            if (isComputerGame && currentPlayer === 'O') {
+                setTimeout(computerMove, 500); // Give a slight delay for human readability
+            }
+        }
+
+        /**
+         * Manages the computer's move based on selected difficulty.
+         */
+        function computerMove() {
+            let bestMove;
+            if (aiDifficulty === 'easy') {
+                bestMove = getRandomMove();
+            } else if (aiDifficulty === 'normal') {
+                bestMove = getNormalAIMove();
+            } else if (aiDifficulty === 'hard') {
+                bestMove = getBestMove(); // Minimax algorithm for hard difficulty
+            }
+
+            if (bestMove !== null) {
+                handleMove(bestMove);
+            }
+        }
+
+        /**
+         * Returns a random available move for Easy AI.
+         * @returns {number|null} An available index or null if no moves left.
+         */
+        function getRandomMove() {
+            const availableMoves = board.map((val, idx) => val === null ? idx : null).filter(val => val !== null);
+            if (availableMoves.length > 0) {
+                const randomIndex = Math.floor(Math.random() * availableMoves.length);
+                return availableMoves[randomIndex];
+            }
+            return null;
+        }
+
+        /**
+         * Returns a move for Normal AI (blocks wins, takes immediate wins, otherwise random).
+         * @returns {number|null} An index for the computer's move.
+         */
+        function getNormalAIMove() {
+            const availableMoves = board.map((val, idx) => val === null ? idx : null).filter(val => val !== null);
+
+            // 1. Check if AI can win
+            for (let i = 0; i < availableMoves.length; i++) {
+                const move = availableMoves[i];
+                const newBoard = [...board];
+                newBoard[move] = 'O';
+                if (checkWin(newBoard) === 'O') {
+                    return move;
+                }
+            }
+
+            // 2. Check if player can win and block them
+            for (let i = 0; i < availableMoves.length; i++) {
+                const move = availableMoves[i];
+                const newBoard = [...board];
+                newBoard[move] = 'X';
+                if (checkWin(newBoard) === 'X') {
+                    return move;
+                }
+            }
+
+            // 3. Take center if available
+            if (board[4] === null) return 4;
+
+            // 4. Take opposite corner
+            const corners = [0, 2, 6, 8];
+            for (let i = 0; i < corners.length; i++) {
+                const corner = corners[i];
+                if (board[corner] === null && board[8 - corner] === 'X') {
+                    return corner;
+                }
+            }
+
+            // 5. Take any empty corner
+            const emptyCorners = corners.filter(c => board[c] === null);
+            if (emptyCorners.length > 0) {
+                return emptyCorners[Math.floor(Math.random() * emptyCorners.length)];
+            }
+
+            // 6. Take any empty side
+            const sides = [1, 3, 5, 7];
+            const emptySides = sides.filter(s => board[s] === null);
+            if (emptySides.length > 0) {
+                return emptySides[Math.floor(Math.random() * emptySides.length)];
+            }
+
+            // Fallback to random if no strategic moves
+            return getRandomMove();
+        }
+
+        /**
+         * Minimax algorithm for Hard AI.
+         * @returns {number} The best move for the AI.
+         */
+        function getBestMove() {
+            let bestScore = -Infinity;
+            let move = null;
+            for (let i = 0; i < board.length; i++) {
+                if (board[i] === null) {
+                    board[i] = 'O'; // Try AI's move
+                    let score = minimax(board, 0, false);
+                    board[i] = null; // Undo move
+                    if (score > bestScore) {
+                        bestScore = score;
+                        move = i;
+                    }
+                }
+            }
+            return move;
+        }
+
+        /**
+         * Minimax recursive function.
+         * @param {Array} currentBoard - The current board state.
+         * @param {number} depth - Current depth of the recursion.
+         * @param {boolean} isMaximizing - True if maximizing player (AI), false if minimizing (human).
+         * @returns {number} The score of the current board state.
+         */
+        function minimax(currentBoard, depth, isMaximizing) {
+            const winner = checkWin(currentBoard);
+            if (winner === 'O') return 10 - depth;
+            if (winner === 'X') return depth - 10;
+            if (checkDraw(currentBoard)) return 0;
+
+            if (isMaximizing) {
+                let bestScore = -Infinity;
+                for (let i = 0; i < currentBoard.length; i++) {
+                    if (currentBoard[i] === null) {
+                        currentBoard[i] = 'O';
+                        bestScore = Math.max(bestScore, minimax(currentBoard, depth + 1, false));
+                        currentBoard[i] = null;
+                    }
+                }
+                return bestScore;
+            } else {
+                let bestScore = Infinity;
+                for (let i = 0; i < currentBoard.length; i++) {
+                    if (currentBoard[i] === null) {
+                        currentBoard[i] = 'X';
+                        bestScore = Math.min(bestScore, minimax(currentBoard, depth + 1, true));
+                        currentBoard[i] = null;
+                    }
+                }
+                return bestScore;
+            }
+        }
+
+        /**
+         * Resets the game board and starts a new game.
+         */
+        function restartGame() {
+            board = Array(9).fill(null);
+            currentPlayer = 'X';
+            gameActive = true;
+            removeOverlay();
+            drawBoard();
+            // If it's a computer game and computer is 'O' and starting first, make its move
+            if (isComputerGame && currentPlayer === 'O') {
+                setTimeout(computerMove, 500);
+            }
+        }
+
+        /**
+         * Navigates back to the main menu.
+         */
+        function goHome() {
+            gameActive = false;
+            removeOverlay();
+            gameBoard.classList.add('hidden'); // Hide the board
+            mainMenu.classList.remove('hidden'); // Show main menu
+            difficultySelection.classList.add('hidden'); // Hide difficulty selection if visible
+            profileInfoDiv.classList.remove('hidden'); // Show profile info
+            profileInfoDiv.classList.add('visible');
+            gameScoreDisplay.classList.add('hidden'); // Hide game score
+            gameScoreDisplay.classList.remove('visible');
+            loadScores(); // Ensure scores are loaded and displayed when returning to home if needed
+        }
+
+        /**
+         * Shows the difficulty selection menu and hides the main menu.
+         */
+        function showDifficultySelection() {
+            mainMenu.classList.add('hidden');
+            difficultySelection.classList.remove('hidden');
+            profileInfoDiv.classList.remove('visible');
+            profileInfoDiv.classList.add('hidden');
+            gameScoreDisplay.classList.remove('hidden');
+            gameScoreDisplay.classList.add('visible');
+            updateScoreDisplay(); // Update scores when showing score display
+        }
+
+        /**
+         * Starts a new game against the computer with the selected difficulty.
+         * @param {string} difficulty - The chosen AI difficulty ('easy', 'normal', 'hard').
+         */
+        function startVsComputer(difficulty) {
+            aiDifficulty = difficulty;
+            isComputerGame = true;
+            gameActive = true;
+            board = Array(9).fill(null);
+            currentPlayer = 'X'; // Player always starts as X
+            drawBoard();
+            difficultySelection.classList.add('hidden'); // Hide difficulty menu
+            // No need to explicitly hide mainMenu, as gameBoard will be visible
+        }
+
+        /**
+         * Returns to the main menu from difficulty selection.
+         */
+        function backToMainMenu() {
+            difficultySelection.classList.add('hidden');
+            mainMenu.classList.remove('hidden');
+            profileInfoDiv.classList.remove('hidden');
+            profileInfoDiv.classList.add('visible');
+            gameScoreDisplay.classList.add('hidden');
+            gameScoreDisplay.classList.remove('visible');
+        }
+
+        /**
+         * Simulates creating a room (generates a random code).
+         */
+        function createRoom() {
+            roomCode = Math.random().toString(36).substring(2, 8).toUpperCase(); // Simple 6-char random code
+            document.getElementById('roomCodeDisplay').textContent = roomCode;
+            roomPopup.classList.remove('hidden');
+            mainMenu.classList.add('hidden');
+            // In a real app, this would involve WebSockets to create a persistent room
+            showSuccessMessage('Room created! Share the code.');
+        }
+
+        /**
+         * Closes the room code display popup.
+         */
+        function closeRoomBox() {
+            roomPopup.classList.add('hidden');
+            mainMenu.classList.remove('hidden');
+            roomCode = null; // Clear room code
+        }
+
+        /**
+         * Opens the modal for joining a room.
+         */
+        function openJoinModal() {
+            joinModal.classList.remove('hidden');
+            mainMenu.classList.add('hidden');
+            document.getElementById('roomCodeInput').value = ''; // Clear previous input
+        }
+
+        /**
+         * Simulates joining a room.
+         */
+        function joinRoom() {
+            const enteredCode = document.getElementById('roomCodeInput').value.trim().toUpperCase();
+            if (enteredCode) {
+                // In a real app, this would send the code to a server to join a room
+                // For this simulation, we just close the modal and start a game
+                showSuccessMessage(`Attempting to join room: ${enteredCode}`);
+                closeJoinModal();
+                // Simulate starting a multiplayer game after successful join
+                isComputerGame = false;
+                gameActive = true;
+                board = Array(9).fill(null);
+                currentPlayer = 'X';
+                drawBoard();
+                profileInfoDiv.classList.remove('visible');
+                profileInfoDiv.classList.add('hidden');
+                gameScoreDisplay.classList.remove('hidden');
+                gameScoreDisplay.classList.add('visible');
+                updateScoreDisplay(); // Update scores when showing score display
+            } else {
+                showErrorMessage('Please enter a room code.');
+            }
+        }
+
+        /**
+         * Closes the join room modal.
+         */
+        function closeJoinModal() {
+            joinModal.classList.add('hidden');
+            mainMenu.classList.remove('hidden');
+        }
+
+        /**
+         * Dummy leaderboard data (in a real app, this would come from a database).
+         */
+        const dummyLeaderboardData = [
+            { rank: 1, name: "NeonWarrior", img: "avatar.png", wins: 15, matches: 20, prize: "🏆", sticker: "gold" },
+            { rank: 2, name: "PixelChamp", img: "avatar2.png", wins: 12, matches: 18, prize: "🥈", sticker: "silver" },
+            { rank: 3, name: "CodeMaster", img: "avatar3.png", wins: 10, matches: 15, prize: "🥉", sticker: "bronze" },
+            { rank: 4, name: "GameGuru", img: "avatar4.png", wins: 9, matches: 16 },
+            { rank: 5, name: "TicTacPro", img: "avatar5.png", wins: 8, matches: 14 },
+            { rank: 6, name: "CyberPlayer", img: "avatar.png", wins: 7, matches: 12 },
+            { rank: 7, name: "ByteBuster", img: "avatar2.png", wins: 6, matches: 11 },
+            { rank: 8, name: "LogicHero", img: "avatar3.png", wins: 5, matches: 10 },
+            { rank: 9, name: "DigitalDiva", img: "avatar4.png", wins: 4, matches: 9 },
+            { rank: 10, name: "MatrixMind", img: "avatar5.png", wins: 3, matches: 8 }
+        ];
+
+        /**
+         * Displays the leaderboard.
+         */
+        function viewLeaderboard() {
+            const rankingsDiv = document.getElementById('rankings');
+            rankingsDiv.innerHTML = ''; // Clear previous entries
+
+            dummyLeaderboardData.forEach(entry => {
+                const entryDiv = document.createElement('div');
+                entryDiv.classList.add('leaderboard-entry');
+
+                const img = document.createElement('img');
+                img.src = entry.img;
+                img.alt = entry.name;
+                entryDiv.appendChild(img);
+
+                const nameSection = document.createElement('div');
+                nameSection.classList.add('name-section');
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.classList.add('name');
+                nameSpan.textContent = entry.name;
+                nameSection.appendChild(nameSpan);
+
+                const matchesPlayedSpan = document.createElement('span');
+                matchesPlayedSpan.classList.add('matches-played');
+                matchesPlayedSpan.textContent = `Matches: ${entry.matches} | Wins: ${entry.wins}`;
+                nameSection.appendChild(matchesPlayedSpan);
+
+                entryDiv.appendChild(nameSection);
+
+                const rankSpan = document.createElement('span');
+                rankSpan.classList.add('rank');
+                rankSpan.textContent = `#${entry.rank}`;
+                entryDiv.prepend(rankSpan); // Add rank at the beginning
+
+                if (entry.prize) {
+                    const prizeSpan = document.createElement('span');
+                    prizeSpan.classList.add('prize');
+                    prizeSpan.textContent = entry.prize;
+                    entryDiv.appendChild(prizeSpan);
+                }
+
+                if (entry.sticker) {
+                    const stickerSpan = document.createElement('span');
+                    stickerSpan.classList.add('sticker', entry.sticker);
+                    // Unicode for different emojis (example)
+                    if (entry.sticker === 'gold') stickerSpan.textContent = '👑';
+                    else if (entry.sticker === 'silver') stickerSpan.textContent = '🌟';
+                    else if (entry.sticker === 'bronze') stickerSpan.textContent = '🏅';
+                    entryDiv.appendChild(stickerSpan);
+                }
+
+                // Add message admin button for specific ranks (e.g., top 3)
+                if (entry.rank <= 3) {
+                    const messageBtn = document.createElement('button');
+                    messageBtn.classList.add('admin-message-btn');
+                    messageBtn.textContent = '✉️';
+                    messageBtn.title = `Message Admin for ${entry.name}`;
+                    messageBtn.onclick = () => alert(`Messaging admin for ${entry.name}'s prize!`);
+                    entryDiv.appendChild(messageBtn);
+                }
+
+                rankingsDiv.appendChild(entryDiv);
+            });
+
+            leaderboardPanel.classList.remove('hidden');
+            mainMenu.classList.add('hidden');
+        }
+
+        /**
+         * Closes the leaderboard.
+         */
+        function closeLeaderboard() {
+            leaderboardPanel.classList.add('hidden');
+            mainMenu.classList.remove('hidden');
+        }
+
+        /**
+         * Function to handle ad clicks.
+         * This can be extended to open a new tab, show a full-screen ad, etc.
+         */
+        function showAdOverlay() {
+            // For a more engaging ad, you can create a specific ad overlay here
+            // For now, we'll use a simple alert and then show a simulated reward message
+            alert('Ad is loading...');
+
+            // Simulate ad viewing time
+            setTimeout(() => {
+                showOverlay('🎉 Ad Watched! Here’s a bonus: Unlock a new theme! (Simulated)', false);
+                // In a real app, you'd integrate with an ad network and grant actual rewards.
+                // You could add logic to unlock a theme here, for example:
+                // localStorage.setItem('unlockedTheme', 'NeonMatrix');
+            }, 1000); // Simulate 1 second ad viewing
+        }
+
+
+        // Initial setup
+        loadScores(); // Load scores on page load
+        drawBoard(); // Draw empty board initially (it will be hidden until game starts)
+    </script>
+</body>
+</html>
